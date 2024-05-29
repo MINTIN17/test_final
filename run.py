@@ -1,19 +1,35 @@
-import os
-import threading
-from Demo_web.application.Server_socket import utils
-from Demo_web.application import app, socketio
+import json
+from flask_socketio import emit
+from Demo_web.application import create_app, SocketIO
 
-# if __name__ == "__main__":
-#     # socket_thread = threading.Thread(target=utils.start_socket_server)
-#     # socket_thread.start()
-#     socketio.run(app)
-#     app.run(host='0.0.0.0', port=5000)
+app = create_app(debug=True)
+socketio = SocketIO(app)
+
+@app.route("/")
+def home():
+    return "hello"
+
 @socketio.on('connect')
 def handle_connect():
     print('Client connected')
+
+@socketio.on('message')
+def handle_message(message):
+    try:
+        print(message)
+        # Assuming message is JSON string
+        data = json.loads(message)
+        print('received message: ' + str(data))
+        response = f'Server received: {data["data"]}'
+        emit('response', {'data': response})
+    except ValueError as e:
+        print(f'Error processing message: {e}')
+        emit('response', {'error': 'Invalid message format'})
     
 if __name__ == '__main__':
-    socket_path = os.environ.get("WERKZEUG_SERVER_UNIX_SOCKET")
-    print(socket_path)
+    # socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)
+    # eventlet.wsgi.server(eventlet.listen(('0.0.0.0', 5000)), app)
+    # socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)
     app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+    # socketio.run(app)
 
